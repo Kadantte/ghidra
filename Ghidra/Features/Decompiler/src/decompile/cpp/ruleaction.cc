@@ -7834,7 +7834,7 @@ void RuleDivTermAdd::getOpList(vector<uint4> &oplist) const
 int4 RuleDivTermAdd::applyOp(PcodeOp *op,Funcdata &data)
 
 {
-  int4 n;
+  uint4 n;
   OpCode shiftopc;
   PcodeOp *subop = findSubshift(op,n,shiftopc);
   if (subop == (PcodeOp *)0) return 0;
@@ -7911,7 +7911,7 @@ int4 RuleDivTermAdd::applyOp(PcodeOp *op,Funcdata &data)
 /// \param n is the reference that will hold the total truncation
 /// \param shiftopc will hold the shift OpCode if used, CPUI_MAX otherwise
 /// \return the SUBPIECE op if present or NULL otherwise
-PcodeOp *RuleDivTermAdd::findSubshift(PcodeOp *op,int4 &n,OpCode &shiftopc)
+PcodeOp *RuleDivTermAdd::findSubshift(PcodeOp *op,uint4 &n,OpCode &shiftopc)
 
 { // SUB( .,#c) or SUB(.,#c)>>n  return baseop and n+c*8
   // make SUB is high
@@ -7930,7 +7930,7 @@ PcodeOp *RuleDivTermAdd::findSubshift(PcodeOp *op,int4 &n,OpCode &shiftopc)
     subop = op;
     n = 0;
   }
-  int4 c = subop->getIn(1)->getOffset();
+  uint4 c = subop->getIn(1)->getOffset();
   if (subop->getOut()->getSize() + c != subop->getIn(0)->getSize())
     return (PcodeOp *)0;	// SUB is not high
   n += 8*c;
@@ -7984,8 +7984,8 @@ int4 RuleDivTermAdd2::applyOp(PcodeOp *op,Funcdata &data)
   if (!z->isWritten()) return 0;
   PcodeOp *subpieceop = z->getDef();
   if (subpieceop->code() != CPUI_SUBPIECE) return 0;
-  int4 n = subpieceop->getIn(1)->getOffset() *8;
-  if (n!= 8*(subpieceop->getIn(0)->getSize() - z->getSize())) return 0;
+  uint4 n = subpieceop->getIn(1)->getOffset() *8;
+  if (n > 127 || n!= 8*(subpieceop->getIn(0)->getSize() - z->getSize())) return 0;
   Varnode *multvn = subpieceop->getIn(0);
   if (!multvn->isWritten()) return 0;
   PcodeOp *multop = multvn->getDef();
@@ -8052,7 +8052,7 @@ int4 RuleDivTermAdd2::applyOp(PcodeOp *op,Funcdata &data)
 /// \param xsize will hold the number of (non-zero) bits in the numerand
 /// \param extopc holds whether the extension is INT_ZEXT or INT_SEXT
 /// \return the extended numerand if possible, or the unextended numerand, or NULL
-Varnode *RuleDivOpt::findForm(PcodeOp *op,int4 &n,uint8 *y,int4 &xsize,OpCode &extopc)
+Varnode *RuleDivOpt::findForm(PcodeOp *op,uint4 &n,uint8 *y,uint4 &xsize,OpCode &extopc)
 
 {
   PcodeOp *curOp = op;
@@ -8140,7 +8140,7 @@ Varnode *RuleDivOpt::findForm(PcodeOp *op,int4 &n,uint8 *y,int4 &xsize,OpCode &e
 /// \param y is the (up to 128-bit) multiplicative coefficient
 /// \param xsize is the maximum power of 2
 /// \return the divisor or 0 if the checks fail
-uintb RuleDivOpt::calcDivisor(uintb n,uint8 *y,int4 xsize)
+uintb RuleDivOpt::calcDivisor(uint4 n,uint8 *y,uint4 xsize)
 
 {
   if (n > 127 || xsize > 64) return 0;		// Not enough precision
@@ -8255,7 +8255,7 @@ bool RuleDivOpt::checkFormOverlap(PcodeOp *op)
     if (opc != CPUI_INT_RIGHT && opc != CPUI_INT_SRIGHT) continue;
     Varnode *cvn = superOp->getIn(1);
     if (!cvn->isConstant()) return true;	// Might be a form where constant has propagated yet
-    int4 n,xsize;
+    uint4 n,xsize;
     uint8 y[2];
     OpCode extopc;
     Varnode *inVn = findForm(superOp, n, y, xsize, extopc);
@@ -8281,7 +8281,7 @@ void RuleDivOpt::getOpList(vector<uint4> &oplist) const
 int4 RuleDivOpt::applyOp(PcodeOp *op,Funcdata &data)
 
 {
-  int4 n,xsize;
+  uint4 n,xsize;
   uint8 y[2];
   OpCode extOpc;
   Varnode *inVn = findForm(op,n,y,xsize,extOpc);
