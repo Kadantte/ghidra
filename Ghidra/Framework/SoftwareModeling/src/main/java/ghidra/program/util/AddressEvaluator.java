@@ -19,14 +19,23 @@ import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.util.List;
 
-import generic.expressions.*;
+import generic.expressions.BigIntegerExpressionValue;
+import generic.expressions.ExpressionEvaluator;
+import generic.expressions.ExpressionException;
+import generic.expressions.ExpressionOperator;
+import generic.expressions.ExpressionValue;
 import ghidra.app.util.NamespaceUtils;
 import ghidra.app.util.SymbolPath;
-import ghidra.program.model.address.*;
+import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressFactory;
+import ghidra.program.model.address.AddressSpace;
+import ghidra.program.model.address.OverlayAddressSpace;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryBlock;
-import ghidra.program.model.symbol.*;
+import ghidra.program.model.symbol.Namespace;
+import ghidra.program.model.symbol.Symbol;
+import ghidra.program.model.symbol.SymbolTable;
 
 /**
  * Class for evaluating expressions as an Address. See 
@@ -57,11 +66,18 @@ public class AddressEvaluator extends ExpressionEvaluator {
 	 * to a unique legitimate address.
 	 */
 	public static Address evaluate(Program p, String inputExpression) {
-		return evaluate(p, null, inputExpression);
+		AddressEvaluator evaluator = new AddressEvaluator(p, true);
+		try {
+			return evaluator.parseAsAddress(inputExpression);
+		}
+		catch (ExpressionException e) {
+			return null;
+		}
 	}
 
 	/**
-	 * Gets a valid address for the specified program as indicated by the input expression.
+	 * Gets a valid address for the specified program as indicated by the input expression or null if
+	 * the expression could not be evaluated for any reason.
 	 * @param p the program to use for determining the address.
 	 * @param baseAddr the base address to use for relative addressing.
 	 * @param inputExpression string representation of the address desired.
@@ -76,6 +92,34 @@ public class AddressEvaluator extends ExpressionEvaluator {
 		catch (ExpressionException e) {
 			return null;
 		}
+	}
+
+	/**
+	 * Gets a valid address for the specified program as indicated by the input expression.
+	 * @param p the program to use for determining the address.
+	 * @param baseAddr the base address to use for relative addressing
+	 * @param inputExpression string representation of the address desired
+	 * @return a valid address in the program that the expression evaluated to
+	 * @throws ExpressionException if the expression could be evaluated to an address
+	 */
+	public static Address parseRelative(Program p, Address baseAddr, String inputExpression)
+			throws ExpressionException {
+		AddressEvaluator evaluator = new AddressEvaluator(p, true);
+		return evaluator.parseAsRelativeAddress(inputExpression, baseAddr);
+	}
+
+	/**
+	 * Gets a valid address for the specified program as indicated by the input expression.
+	 * @param p the program to use for determining the address.
+	 * @param baseAddr the base address to use for relative addressing
+	 * @param inputExpression string representation of the address desired
+	 * @return a valid address in the program that the expression evaluated to
+	 * @throws ExpressionException if the expression could be evaluated to an address
+	 */
+	public static Address parse(Program p, String inputExpression)
+			throws ExpressionException {
+		AddressEvaluator evaluator = new AddressEvaluator(p, true);
+		return evaluator.parseAsAddress(inputExpression);
 	}
 
 	/**
@@ -123,14 +167,15 @@ public class AddressEvaluator extends ExpressionEvaluator {
 	 * address.
 	 */
 	public Address parseAsAddress(String input) throws ExpressionException {
-		return this.parseAsRelativeAddress(input, null);
+		ExpressionValue expressionValue = parse(input);
+		return toAddress(expressionValue);
 	}
 
 	/**
 	 * Evaluates the given input expression as a relative offset that will be added to the given
 	 * base address.
 	 * @param input the expression to evaluate as an offset
-	 * @param baseAddress the base address the evaluted expression will be added to to get the 
+	 * @param baseAddress the base address the evaluated expression will be added to to get the 
 	 * resulting address.
 	 * @return the Address after the evaluated offset is added to the given base address.
 	 * @throws ExpressionException if the input expression can't be evaluated to a valid, unique
@@ -138,25 +183,9 @@ public class AddressEvaluator extends ExpressionEvaluator {
 	 */
 	public Address parseAsRelativeAddress(String input, Address baseAddress)
 			throws ExpressionException {
-		ExpressionValue expressionValue = baseAddress == null ? parse(input)
-				: parse(input, new AddressExpressionValue(baseAddress));
 
-		if (expressionValue instanceof AddressExpressionValue addressValue) {
-			return validateAddressSpace(addressValue.getAddress());
-		}
-		if (expressionValue instanceof LongExpressionValue longValue) {
-			long offset = longValue.getLongValue();
-			AddressSpace space = getAddressSpace();
-			try {
-				return space.getAddressInThisSpaceOnly(offset*space.getAddressableUnitSize());
-			}
-			catch (AddressOutOfBoundsException e) {
-				throw new ExpressionException(e.getMessage());
-			}
-		}
-		throw new ExpressionException("Expression did not evalute to a long! Got a " +
-			expressionValue.getClass() + " instead.");
-
+		ExpressionValue expressionValue = parse(input, new AddressExpressionValue(baseAddress));
+		return toAddress(expressionValue);
 	}
 
 	/**
@@ -173,6 +202,21 @@ public class AddressEvaluator extends ExpressionEvaluator {
 	 */
 	public void setPreferredAddressSpace(AddressSpace space) {
 		this.preferredSpace = space;
+	}
+
+	private Address toAddress(ExpressionValue expressionValue) throws ExpressionException {
+		if (expressionValue instanceof AddressExpressionValue addressValue) {
+			return validateAddressSpace(addressValue.getAddress());
+		}
+
+		if (expressionValue instanceof BigIntegerExpressionValue bigValue) {
+			AddressExpressionValue addressValue =
+				new AddressExpressionValue(getAddressSpace(), bigValue.getValue());
+			return validateAddressSpace(addressValue.getAddress());
+		}
+
+		throw new ExpressionException("Expression did not evalute to a long! Got a " +
+			expressionValue.getClass() + " instead.");
 	}
 
 	// checks if the given address's address space is compatible with the preferred address space
