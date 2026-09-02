@@ -47,7 +47,6 @@ import java.util.stream.IntStream;
  * <em>OrderedFunction</em>-type and <em>Table</em>-type searches will enforce the order of the
  * buffer as presented in the pattern. See {@link BpsSearchType} for a complete discussion on search
  * types.
- * <p>
  * 
  * <li><strong>buffer</strong>
  * <p>
