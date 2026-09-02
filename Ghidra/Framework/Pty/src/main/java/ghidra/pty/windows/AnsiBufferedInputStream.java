@@ -15,9 +15,7 @@
  */
 package ghidra.pty.windows;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -121,7 +119,7 @@ public class AnsiBufferedInputStream extends InputStream {
 			return -1;
 		}
 		byte c = (byte) ci;
-//		printDebugChar(c);
+		//printDebugChar(c);
 		switch (mode) {
 			case CHARS -> processChars(c);
 			case ESC -> processEsc(c);
@@ -189,7 +187,10 @@ public class AnsiBufferedInputStream extends InputStream {
 		switch (c) {
 			case '[' -> mode = Mode.CSI;
 			case ']' -> mode = Mode.OSC;
-			default -> throw new AssertionError("Saw 'ESC " + c + "' at " + countIn);
+			default -> {
+				mode = Mode.CHARS;
+				Msg.debug(this, "Saw 'ESC " + c + "' at " + countIn);
+			}
 		}
 	}
 
@@ -249,6 +250,10 @@ public class AnsiBufferedInputStream extends InputStream {
 			}
 			case 'l' -> {
 				execPrivateSequence(false);
+				mode = Mode.CHARS;
+			}
+			case 'r' -> {
+				Msg.debug(this, "TODO: r (scroll region)");
 				mode = Mode.CHARS;
 			}
 		}
@@ -352,11 +357,11 @@ public class AnsiBufferedInputStream extends InputStream {
 	}
 
 	protected void execCursorUp() {
-		throw new UnsupportedOperationException("Cursor Up");
+		//throw new UnsupportedOperationException("Cursor Up");
 	}
 
 	protected void execCursorDown() {
-		throw new UnsupportedOperationException("Cursor Down");
+		//throw new UnsupportedOperationException("Cursor Down");
 	}
 
 	protected void setPosition(int newPosition) {
@@ -377,8 +382,9 @@ public class AnsiBufferedInputStream extends InputStream {
 	}
 
 	protected void execCursorCharAbsolute() {
-		int abs = parseNumericBuffer();
-		lineBuf.position(abs - 1);
+		int[] abset = parseNumericListBuffer();
+		int abs = Math.min(abset[0] - 1, lineBuf.limit());
+		lineBuf.position(abs);
 	}
 
 	protected void execCursorPosition() {
@@ -442,7 +448,9 @@ public class AnsiBufferedInputStream extends InputStream {
 	}
 
 	protected void execEraseInLine() {
-		switch (parseNumericBuffer()) {
+		int[] abset = parseNumericListBuffer();
+		int abs = abset[0];
+		switch (abs) {
 			case 0 -> Arrays.fill(lineBuf.array(), lineBuf.position(), lineBuf.capacity(),
 				(byte) 0);
 			case 1 -> Arrays.fill(lineBuf.array(), 0, lineBuf.position() + 1, (byte) 0);
