@@ -49,6 +49,8 @@ public class AnsiBufferedInputStream extends InputStream {
 
 	private Mode mode = Mode.CHARS;
 
+	private int savePosition;  // For ESC 7/8
+
 	public AnsiBufferedInputStream(InputStream in) {
 		if (in instanceof HandleInputStream) {
 			// Spare myself the 1-by-1 native calls
@@ -132,7 +134,8 @@ public class AnsiBufferedInputStream extends InputStream {
 			default -> throw new AssertionError();
 		}
 		countIn++;
-		return c;
+		// Don't return a potentially negative number
+		return ci;
 	}
 
 	/**
@@ -187,9 +190,20 @@ public class AnsiBufferedInputStream extends InputStream {
 		switch (c) {
 			case '[' -> mode = Mode.CSI;
 			case ']' -> mode = Mode.OSC;
-			default -> {
+			// At some point, these may be replaced with the more current ESC[s and ESC[u
+			case '7' -> {
+				savePosition = lineBuf.position();
 				mode = Mode.CHARS;
-				Msg.debug(this, "Saw 'ESC " + c + "' at " + countIn);
+			}
+			case '8' -> {
+				// Check limits
+				int pos = Math.min(savePosition, lineBuf.limit());
+				lineBuf.position(pos);
+				mode = Mode.CHARS;
+			}
+			default -> {
+				//mode = Mode.CHARS;
+				Msg.debug(this, "Saw 'ESC " + c + "' at " + countIn + " pos=" + lineBuf.position());
 			}
 		}
 	}
@@ -203,7 +217,14 @@ public class AnsiBufferedInputStream extends InputStream {
 
 	protected void processCsiParamOrCommand(byte c) {
 		switch (c) {
-			default -> escBuf.put(c);
+			default -> {
+				if ((c >= 0x30 && c <= 0x39) || c == (byte) ';') {
+					escBuf.put(c);
+				}
+				else {
+					Msg.debug(this, "Unexpected esc buffer entry: " + c);
+				}
+			}
 			case 'A' -> {
 				execCursorUp();
 				mode = Mode.CHARS;
@@ -252,8 +273,16 @@ public class AnsiBufferedInputStream extends InputStream {
 				execPrivateSequence(false);
 				mode = Mode.CHARS;
 			}
+			case 'f' -> {
+				// Need to flush escBuf at a minimum
+				readAndClearEscBuf();
+				Msg.debug(this, "TODO: f (Horizontal and Vertical Position - HVP)");
+				mode = Mode.CHARS;
+			}
 			case 'r' -> {
-				Msg.debug(this, "TODO: r (scroll region)");
+				// Need to flush escBuf at a minimum
+				readAndClearEscBuf();
+				Msg.debug(this, "TODO: r (Set Top and Bottom Margins - DECSTBM)");
 				mode = Mode.CHARS;
 			}
 		}
@@ -357,10 +386,12 @@ public class AnsiBufferedInputStream extends InputStream {
 	}
 
 	protected void execCursorUp() {
+		readAndClearEscBuf();
 		//throw new UnsupportedOperationException("Cursor Up");
 	}
 
 	protected void execCursorDown() {
+		readAndClearEscBuf();
 		//throw new UnsupportedOperationException("Cursor Down");
 	}
 
@@ -449,7 +480,7 @@ public class AnsiBufferedInputStream extends InputStream {
 
 	protected void execEraseInLine() {
 		int[] abset = parseNumericListBuffer();
-		int abs = abset[0];
+		int abs = abset.length == 0 ? 0 : abset[0];
 		switch (abs) {
 			case 0 -> Arrays.fill(lineBuf.array(), lineBuf.position(), lineBuf.capacity(),
 				(byte) 0);
