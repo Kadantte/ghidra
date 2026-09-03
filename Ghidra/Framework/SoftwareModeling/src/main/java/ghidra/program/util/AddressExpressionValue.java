@@ -70,12 +70,12 @@ public class AddressExpressionValue implements ExpressionValue {
 	private Address toAddress(AddressSpace space, BigInteger value) throws ExpressionException {
 		if (value.signum() < 0) {
 			// a negative value is less than than min address
-			throw new ExpressionException(
+			throw new AddressOutOfBoundsException(
 				"Address out of bounds. Expression evaluated to a negative value: " + value);
 		}
 
 		if (isBiggerThanMaxAddress(space, value)) {
-			throw new ExpressionException(
+			throw new AddressOutOfBoundsException(
 				"Address out of bounds. Expression evaluated to a value larger than max address: " +
 					value);
 		}
@@ -134,47 +134,41 @@ public class AddressExpressionValue implements ExpressionValue {
 		BigInteger myValue = new BigInteger(Long.toUnsignedString(value.getOffset()));
 		int compareResult = myValue.compareTo(otherValue);
 
-		try {
+		switch (operator) {
+			case BITWISE_AND:
+				return addressExpressionOf(myValue.and(otherValue));
+			case BITWISE_OR:
+				return addressExpressionOf(myValue.or(otherValue));
+			case BITWISE_XOR:
+				return addressExpressionOf(myValue.xor(otherValue));
+			case DIVIDE:
+				return addressExpressionOf(myValue.divide(otherValue));
+			case SUBTRACT:
+				return addressExpressionOf(value.subtract(otherValue.longValueExact()));
+			case ADD:
+				return addressExpressionOf(value.add(otherValue.longValueExact()));
+			case MULTIPLY:
+				return addressExpressionOf(myValue.multiply(otherValue));
+			case SHIFT_LEFT:
+				return addressExpressionOf(myValue.shiftLeft(otherValue.intValueExact()));
+			case SHIFT_RIGHT:
+				return addressExpressionOf(myValue.shiftRight(otherValue.intValueExact()));
+			case EQUALS:
+				return booleanExpression(compareResult == 0);
+			case GREATER_THAN:
+				return booleanExpression(compareResult > 0);
+			case LESS_THAN:
+				return booleanExpression(compareResult < 0);
+			case GREATER_THAN_OR_EQUAL:
+				return booleanExpression(compareResult >= 0);
+			case LESS_THAN_OR_EQUAL:
+				return booleanExpression(compareResult <= 0);
 
-			switch (operator) {
-				case BITWISE_AND:
-					return addressExpressionOf(myValue.and(otherValue));
-				case BITWISE_OR:
-					return addressExpressionOf(myValue.or(otherValue));
-				case BITWISE_XOR:
-					return addressExpressionOf(myValue.xor(otherValue));
-				case DIVIDE:
-					return addressExpressionOf(myValue.divide(otherValue));
-				case SUBTRACT:
-					return addressExpressionOf(value.subtract(otherValue.longValueExact()));
-				case ADD:
-					return addressExpressionOf(value.add(otherValue.longValueExact()));
-				case MULTIPLY:
-					return addressExpressionOf(myValue.multiply(otherValue));
-				case SHIFT_LEFT:
-					return addressExpressionOf(myValue.shiftLeft(otherValue.intValueExact()));
-				case SHIFT_RIGHT:
-					return addressExpressionOf(myValue.shiftRight(otherValue.intValueExact()));
-				case EQUALS:
-					return booleanExpression(compareResult == 0);
-				case GREATER_THAN:
-					return booleanExpression(compareResult > 0);
-				case LESS_THAN:
-					return booleanExpression(compareResult < 0);
-				case GREATER_THAN_OR_EQUAL:
-					return booleanExpression(compareResult >= 0);
-				case LESS_THAN_OR_EQUAL:
-					return booleanExpression(compareResult <= 0);
+			default:
+				throw new ExpressionException(
+					"Binary Operator \"" + operator +
+						"\" with Long operands not supported by Address values!");
 
-				default:
-					throw new ExpressionException(
-						"Binary Operator \"" + operator +
-							"\" with Long operands not supported by Address values!");
-
-			}
-		}
-		catch (Exception e) {
-			throw new ExpressionException("Address out of bounds");
 		}
 	}
 

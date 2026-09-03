@@ -66,60 +66,29 @@ public class AddressEvaluator extends ExpressionEvaluator {
 	 * to a unique legitimate address.
 	 */
 	public static Address evaluate(Program p, String inputExpression) {
-		AddressEvaluator evaluator = new AddressEvaluator(p, true);
-		try {
-			return evaluator.parseAsAddress(inputExpression);
-		}
-		catch (ExpressionException e) {
-			return null;
-		}
+		return evaluate(p, inputExpression, null);
 	}
 
 	/**
 	 * Gets a valid address for the specified program as indicated by the input expression or null if
 	 * the expression could not be evaluated for any reason.
 	 * @param p the program to use for determining the address.
-	 * @param baseAddr the base address to use for relative addressing.
 	 * @param inputExpression string representation of the address desired.
+	 * @param baseAddr the base address to use for relative addressing(if null, then parse absolute)
 	 * @return the address. Otherwise, return null if the string fails to evaluate
 	 * to a unique legitimate address.
 	 */
-	public static Address evaluate(Program p, Address baseAddr, String inputExpression) {
-		AddressEvaluator evaluator = new AddressEvaluator(p, true);
+	public static Address evaluate(Program p, String inputExpression, Address baseAddr) {
 		try {
+			AddressEvaluator evaluator = new AddressEvaluator(p, true);
+			if (baseAddr == null) {
+				return evaluator.parseAsAddress(inputExpression);
+			}
 			return evaluator.parseAsRelativeAddress(inputExpression, baseAddr);
 		}
 		catch (ExpressionException e) {
 			return null;
 		}
-	}
-
-	/**
-	 * Gets a valid address for the specified program as indicated by the input expression.
-	 * @param p the program to use for determining the address.
-	 * @param baseAddr the base address to use for relative addressing
-	 * @param inputExpression string representation of the address desired
-	 * @return a valid address in the program that the expression evaluated to
-	 * @throws ExpressionException if the expression could be evaluated to an address
-	 */
-	public static Address parseRelative(Program p, Address baseAddr, String inputExpression)
-			throws ExpressionException {
-		AddressEvaluator evaluator = new AddressEvaluator(p, true);
-		return evaluator.parseAsRelativeAddress(inputExpression, baseAddr);
-	}
-
-	/**
-	 * Gets a valid address for the specified program as indicated by the input expression.
-	 * @param p the program to use for determining the address.
-	 * @param baseAddr the base address to use for relative addressing
-	 * @param inputExpression string representation of the address desired
-	 * @return a valid address in the program that the expression evaluated to
-	 * @throws ExpressionException if the expression could be evaluated to an address
-	 */
-	public static Address parse(Program p, String inputExpression)
-			throws ExpressionException {
-		AddressEvaluator evaluator = new AddressEvaluator(p, true);
-		return evaluator.parseAsAddress(inputExpression);
 	}
 
 	/**
