@@ -15,10 +15,14 @@
  */
 package ghidra.program.util;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
+import generic.expressions.ExpressionException;
 import generic.test.AbstractGenericTest;
 import ghidra.program.database.ProgramBuilder;
 import ghidra.program.model.address.Address;
@@ -52,14 +56,24 @@ public class AddressEvaluatorTest extends AbstractGenericTest {
 	}
 
 	@Test
-	public void testLongValueExpression() {
+	public void testLongValueExpressionAbsolute() {
 		assertEval(addr("0x19"), "(2+3)*5");
 		assertEval(addr("0x11"), "2+3*5");
 		assertEval(addr("0x11"), "2+(3*5)");
 		assertEval(addr("0x3"), "0-5+8");
 		assertEval(addr("0x3"), "-5+8");
-		assertEval(addr("0xfffffffB"), "-5");
 		assertEval(addr("0x11"), "3+(5+(3*2)+(3))");
+		assertOutOfBounds("Address out of bounds. Expression evaluated to a negative value: -1",
+			"-1");
+	}
+
+	@Test
+	public void testRelativeAddSubtract() {
+		assertEvalRelative(addr("0x50"), addr("0x20"), "+30");
+		assertEvalRelative(addr("0x20"), addr("0x70"), "-50");
+		assertOutOfBoundsRelative(addr("0xffffffff"), "+1");
+		assertOutOfBoundsRelative(addr("0x0"), "-1");
+
 	}
 
 	@Test
@@ -80,8 +94,6 @@ public class AddressEvaluatorTest extends AbstractGenericTest {
 		assertEval(addr("0xff00"), "0xffff ^ 0xff");
 		assertEval(addr("0x123f"), "0xffff & 0x123f");
 		assertEval(addr("0x1234"), "0x1200 | 0x0034");
-		assertEval(addr("0xffffffff"), "~ 0x0");
-		assertEval(addr("0x1201"), "0x1200 | ~(0xfffffffe)");
 		assertEval(addr("0x480"), "0x1200 >> 2");
 		assertEval(addr("0x1200"), "0x480 << 2");
 		assertEval(addr("0x103"), "0x100 | 0x1 | ~(~0x2)");
@@ -154,6 +166,30 @@ public class AddressEvaluatorTest extends AbstractGenericTest {
 
 	private void assertEval(Address addr, String input) {
 		assertEquals(addr, AddressEvaluator.evaluate(program, input));
+	}
+
+	private void assertEvalRelative(Address expected, Address base, String input) {
+		assertEquals(expected, AddressEvaluator.evaluate(program, base, input));
+	}
+
+	private void assertOutOfBounds(String errMsg, String input) {
+		try {
+			AddressEvaluator.parse(program, input);
+			fail("Expected Expression exception");
+		}
+		catch (ExpressionException e) {
+			assertEquals(errMsg, e.getMessage());
+		}
+	}
+
+	private void assertOutOfBoundsRelative(Address base, String input) {
+		try {
+			AddressEvaluator.parseRelative(program, base, input);
+			fail("Expected Expression exception");
+		}
+		catch (ExpressionException e) {
+			assertEquals("Address out of bounds", e.getMessage());
+		}
 	}
 
 	private Address addr(String address) {
