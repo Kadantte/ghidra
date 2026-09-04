@@ -834,7 +834,7 @@ public class JitCodeGenerator<THIS extends JitCompiledPassage> {
 	 * @param block the block
 	 * @param opIdx the index, within the whole passage, of the first op in the block
 	 * @return the result of block generation
-	 * @see #genBlock(OpResult, Local, Local, RetReq, JitBlock, int)
+	 * @see  #genOp(Emitter, Local, Local, RetReq, PcodeOp, JitBlock, int)
 	 */
 	protected GenBlockResult genBlockOps(Emitter<Bot> em, Local<TRef<THIS>> localThis,
 			Local<TInt> localCtxmod, RetReq<TRef<EntryPoint>> retReq, JitBlock block, int opIdx) {
@@ -945,7 +945,6 @@ public class JitCodeGenerator<THIS extends JitCompiledPassage> {
 	 * {@link #genBlockOps(Emitter, Local, Local, RetReq, JitBlock, int)}.
 	 * 
 	 * @param block the block
-	 * @param opIdx the index, within the whole passage, of the first op in the block
 	 * @return the index, within the whole passage, of the op immediately after the block
 	 */
 	protected GenBlockResult genBlock(GenBlockResult prev, Local<TRef<THIS>> localThis,
@@ -1207,11 +1206,11 @@ public class JitCodeGenerator<THIS extends JitCompiledPassage> {
 	 * {@link IllegalArgumentException}. We do not jump directly to the block's translation. Instead
 	 * we emit a prologue for each block, wherein we birth the variables that block expects to be
 	 * live, and then jump to the translation. Then, we emit the translation for each block using
-	 * {@link #genBlock(OpResult, Local, Local, RetReq, JitBlock, int)}, placing transitions between
+	 * {@link #genBlock(GenBlockResult, Local, Local, RetReq, JitBlock)}, placing transitions between
 	 * those connected by fall through using
 	 * {@link VarGen#computeBlockTransition(Local, JitCodeGenerator, BlockFlow)}. Finally, we emit
 	 * each requested exception handler using
-	 * {@link ExceptionHandler#genRun(Emitter, Local, JitCodeGenerator)}.
+	 * {@link ExceptionHandler#genRun(Emitter, Local, JitCodeGenerator, int)}.
 	 * 
 	 * @param em the emitter
 	 * @param localThis a handle to the local holding the {@code this} reference

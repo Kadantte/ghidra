@@ -164,7 +164,7 @@ public enum BranchIndOpGen implements OpGen<JitBranchIndOp> {
 	 *           <li>While we might benefit from compile-time lookup of the exit slot, the run-time
 	 *           conditional check is still little or no improvement over the run-time hash-map
 	 *           lookup.</li>
-	 *           </ul>
+	 *           </ol>
 	 */
 	@Override
 	public <THIS extends JitCompiledPassage> OpResult genRun(Emitter<Bot> em,
