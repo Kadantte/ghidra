@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import generic.expressions.ExpressionException;
 import ghidra.app.nav.Navigatable;
 import ghidra.app.plugin.core.gotoquery.GoToQueryResultsTableModel;
 import ghidra.app.plugin.core.navigation.NavigationOptions;
@@ -36,6 +35,7 @@ import ghidra.framework.plugintool.Plugin;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressFormatException;
+import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
@@ -86,7 +86,7 @@ public class GoToQuery {
 		this.monitor = monitor;
 	}
 
-	public boolean processQuery() throws ExpressionException {
+	public boolean processQuery() {
 		// Queries can be of several different types. Handle all the non-symbol types first since
 		// they are faster to try, as they don't require searching through all the program's
 		// symbols.
@@ -95,7 +95,7 @@ public class GoToQuery {
 			return true;
 		}
 
-		if (processAddressExpression(false)) {
+		if (processAddressExpression()) {
 			return true;
 		}
 
@@ -103,14 +103,7 @@ public class GoToQuery {
 			return true;
 		}
 
-		if (processSymbols()) {
-			return true;
-		}
-
-		// try processing the expression again, this time allowing it to possibly throw an
-		// exception if it looks like an expression, but doesn't evaluate properly.
-		return processAddressExpression(true);
-
+		return processSymbols();
 	}
 
 	private boolean processFileOffset() {
@@ -134,7 +127,7 @@ public class GoToQuery {
 		return false;
 	}
 
-	private boolean processAddressExpression(boolean allowExceptions) throws ExpressionException {
+	private boolean processAddressExpression() {
 		String queryInput = queryData.getQueryString();
 		if (!isAddressExpression(queryInput)) {
 			return false;
@@ -143,21 +136,13 @@ public class GoToQuery {
 		// checking for leading "+" or "-", ignoring spaces.  
 		boolean relative = queryInput.matches("^\\s*[+-].*");
 		Address baseAddr = relative ? fromAddress : null;
-		ExpressionException exception = null;
+		AddressOutOfBoundsException exception = null;
 		for (Program program : getSearchPrograms()) {
-
-			Address evalAddr;
-			try {
-				evalAddr = AddressEvaluator.parseRelative(program, baseAddr, queryInput);
+			Address evalAddr = AddressEvaluator.evaluate(program, queryInput, baseAddr);
+			if (evalAddr != null) {
 				return goTo(program, new ProgramLocation(program, evalAddr));
 			}
-			catch (ExpressionException e) {
-				exception = e;
-			}
 
-		}
-		if (allowExceptions && exception != null) {
-			throw exception;
 		}
 		return false;
 	}

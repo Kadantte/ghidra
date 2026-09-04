@@ -22,10 +22,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import generic.expressions.ExpressionException;
 import generic.test.AbstractGenericTest;
 import ghidra.program.database.ProgramBuilder;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.Symbol;
 
@@ -63,8 +63,7 @@ public class AddressEvaluatorTest extends AbstractGenericTest {
 		assertEval(addr("0x3"), "0-5+8");
 		assertEval(addr("0x3"), "-5+8");
 		assertEval(addr("0x11"), "3+(5+(3*2)+(3))");
-		assertOutOfBounds("Address out of bounds. Expression evaluated to a negative value: -1",
-			"-1");
+		assertOutOfBounds("-1");
 	}
 
 	@Test
@@ -169,26 +168,26 @@ public class AddressEvaluatorTest extends AbstractGenericTest {
 	}
 
 	private void assertEvalRelative(Address expected, Address base, String input) {
-		assertEquals(expected, AddressEvaluator.evaluate(program, base, input));
+		assertEquals(expected, AddressEvaluator.evaluate(program, input, base));
 	}
 
-	private void assertOutOfBounds(String errMsg, String input) {
+	private void assertOutOfBounds(String input) {
 		try {
-			AddressEvaluator.parse(program, input);
+			AddressEvaluator.evaluate(program, input);
 			fail("Expected Expression exception");
 		}
-		catch (ExpressionException e) {
-			assertEquals(errMsg, e.getMessage());
+		catch (AddressOutOfBoundsException e) {
+			// expected
 		}
 	}
 
 	private void assertOutOfBoundsRelative(Address base, String input) {
 		try {
-			AddressEvaluator.parseRelative(program, base, input);
+			AddressEvaluator.evaluate(program, input, base);
 			fail("Expected Expression exception");
 		}
-		catch (ExpressionException e) {
-			assertEquals("Address out of bounds", e.getMessage());
+		catch (AddressOutOfBoundsException e) {
+			// expected
 		}
 	}
 

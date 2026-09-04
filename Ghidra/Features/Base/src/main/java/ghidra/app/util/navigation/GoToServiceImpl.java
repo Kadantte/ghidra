@@ -15,7 +15,6 @@
  */
 package ghidra.app.util.navigation;
 
-import generic.expressions.ExpressionException;
 import ghidra.app.nav.Navigatable;
 import ghidra.app.plugin.core.gotoquery.GoToHelper;
 import ghidra.app.services.GoToOverrideService;
@@ -24,6 +23,7 @@ import ghidra.app.services.GoToServiceListener;
 import ghidra.app.services.QueryData;
 import ghidra.framework.plugintool.Plugin;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.ExternalLocation;
 import ghidra.program.util.ProgramLocation;
@@ -149,7 +149,7 @@ public class GoToServiceImpl implements GoToService {
 			}
 			return result;
 		}
-		catch (ExpressionException e) {
+		catch (AddressOutOfBoundsException e) {
 			// The exception has more information about the failure. Pass that to the listener
 			// if the user has supplied one.
 			if (listener != null) {
