@@ -31,3 +31,4 @@ support/jshellRun||GHIDRA||||END|
 support/launch.properties||GHIDRA||||END|
 support/pyghidraRun||GHIDRA||||END|
 support/sleigh||GHIDRA||||END|
+support/updateServerAllowList||GHIDRA||||END|

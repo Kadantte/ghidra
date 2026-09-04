@@ -15,33 +15,14 @@
  */
 package ghidra.server.remote;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.URL;
-import java.net.UnknownHostException;
+import java.io.*;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.security.KeyStore.PrivateKeyEntry;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -53,38 +34,24 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 import db.buffers.DataBuffer;
 import generic.hash.HashUtilities;
-import generic.test.AbstractGenericTest;
-import generic.test.ConcurrentTestExceptionHandler;
-import generic.test.TestUtils;
+import generic.test.*;
 import ghidra.framework.Application;
-import ghidra.framework.client.ClientUtil;
-import ghidra.framework.client.NotConnectedException;
-import ghidra.framework.client.RepositoryServerAdapter;
+import ghidra.framework.client.*;
 import ghidra.framework.data.ContentHandler;
 import ghidra.framework.data.DomainObjectAdapter;
-import ghidra.framework.protocol.ghidra.GhidraURL;
-import ghidra.framework.protocol.ghidra.Handler;
+import ghidra.framework.protocol.ghidra.*;
 import ghidra.framework.remote.GhidraServerHandle;
 import ghidra.framework.remote.RMIServerPortFactory;
 import ghidra.framework.store.FileSystem;
 import ghidra.framework.store.local.LocalFileSystem;
 import ghidra.framework.store.local.LocalFolderItem;
-import ghidra.net.DefaultKeyManagerFactory;
-import ghidra.net.DefaultSSLContextInitializer;
-import ghidra.net.DefaultTrustManagerFactory;
-import ghidra.net.PKITestUtils;
-import ghidra.net.PKIUtils;
+import ghidra.net.*;
 import ghidra.program.model.listing.Program;
 import ghidra.server.ServerAdmin;
 import ghidra.server.UserManager;
 import ghidra.test.ToyProgramBuilder;
-import ghidra.util.InvalidNameException;
-import ghidra.util.Msg;
-import ghidra.util.NamingUtilities;
-import ghidra.util.SystemUtilities;
-import ghidra.util.exception.AssertException;
-import ghidra.util.exception.CancelledException;
-import ghidra.util.exception.DuplicateFileException;
+import ghidra.util.*;
+import ghidra.util.exception.*;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.timer.GTimer;
 import utilities.util.FileUtilities;
@@ -661,6 +628,8 @@ public class ServerTestUtil {
 	public static synchronized void disposeServer() {
 
 		System.clearProperty(DefaultTrustManagerFactory.GHIDRA_CACERTS_PATH_PROPERTY);
+
+		TransientProjectManager.getTransientProjectManager().dispose();
 
 		if (serverProcess != null) {
 

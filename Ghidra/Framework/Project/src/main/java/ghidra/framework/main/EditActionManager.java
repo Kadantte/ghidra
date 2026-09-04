@@ -17,6 +17,8 @@ package ghidra.framework.main;
 
 import java.io.File;
 
+import javax.swing.event.ChangeListener;
+
 import docking.action.DockingAction;
 import docking.action.builder.ActionBuilder;
 import docking.tool.ToolConstants;
@@ -24,6 +26,7 @@ import docking.widgets.OptionDialog;
 import docking.widgets.filechooser.GhidraFileChooser;
 import docking.widgets.filechooser.GhidraFileChooserMode;
 import ghidra.framework.OperatingSystem;
+import ghidra.framework.client.UrlAllowListManager;
 import ghidra.framework.main.certs.CertificateManagerLauncher;
 import ghidra.net.DefaultKeyManagerFactory;
 import ghidra.net.PKIUtils;
@@ -44,12 +47,25 @@ class EditActionManager {
 	private FrontEndPlugin plugin;
 	private FrontEndTool tool;
 
+	private ChangeListener serverAllowListListener = e -> serverAllowListChanged();
+
+	private DockingAction clearServerAllowList;
 	private DockingAction clearCertPathAction;
 
 	EditActionManager(FrontEndPlugin plugin) {
 		this.plugin = plugin;
 		tool = (FrontEndTool) plugin.getTool();
 		createActions();
+
+		UrlAllowListManager.addChangeListener(serverAllowListListener);
+	}
+
+	void dispose() {
+		UrlAllowListManager.removeChangeListener(serverAllowListListener);
+	}
+
+	private void serverAllowListChanged() {
+		clearServerAllowList.setEnabled(!UrlAllowListManager.getAccessMap().isEmpty());
 	}
 
 	/**
@@ -96,6 +112,22 @@ class EditActionManager {
 					.build();
 		tool.addAction(clearCertPathAction);
 
+		clearServerAllowList =
+			new ActionBuilder("Clear Server Allow List", plugin.getName()).menuGroup("SvrAllowList")
+					.menuPath(ToolConstants.MENU_EDIT, "Clear Server Allow List...")
+					.helpLocation(new HelpLocation("FrontEndPlugin", "Clear_Server_Allow_List"))
+					.onAction(c -> clearServerAllowList())
+					.enabledWhen(c -> DefaultKeyManagerFactory.getKeyStore() != null)
+					.enabled(true)
+					.build();
+		tool.addAction(clearServerAllowList);
+	}
+
+	private void clearServerAllowList() {
+		if (OptionDialog.YES_OPTION == OptionDialog.showYesNoDialog(tool.getToolFrame(),
+			"Clear Server Allow List", "Clear all Server Allow List entries?\n")) {
+			UrlAllowListManager.clearAll();
+		}
 	}
 
 	/**
