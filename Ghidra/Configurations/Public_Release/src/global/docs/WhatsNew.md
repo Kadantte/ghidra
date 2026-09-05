@@ -122,6 +122,19 @@ localhost interface only.
 
 See Ghidra GUI Help Content related to BSim Database Configuration and `bsim_ctl` for more details.
 
+### Ghidra Client - Server Allow List
+
+Ghidra client-side applications will now impose the use of a __Server Allow List__ mechanism to 
+help mitigate unintended server access.  This mechanism is currently used to restrict:
+
+- Ghidra Server URL connections to unknown servers.  Explicit repository access via a shared project
+  will cause that server to be implicitly added to the __Server Allow List__, and
+- Clicking on URL links (e.g., http/https) within Ghidra listing comment annotations.
+
+See analyzeHeadlessREADME.md for information related to use of __analyzeHeadless__ and the new
+__support/updateServerAllowList__ command which can be used to manage the __Server Allow List__
+entries.
+
 ## BSim PostgreSQL Deployment and Control (bsim_ctl)
 
 Extensive changes have been made to the BSim PostgreSQL control script.  New `bsim_ctl` commands
