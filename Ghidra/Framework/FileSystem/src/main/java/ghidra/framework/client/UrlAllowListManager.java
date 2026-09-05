@@ -361,7 +361,6 @@ public class UrlAllowListManager {
 			});
 		}
 		catch (IOException | JsonParseException e) {
-			e.printStackTrace();
 			Msg.error(UrlAllowListManager.class,
 				"Failed to read Server Allow List - file may be replaced (" + e.getMessage() +
 					"): " + file);
