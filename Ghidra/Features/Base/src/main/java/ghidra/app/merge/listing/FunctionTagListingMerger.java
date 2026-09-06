@@ -54,17 +54,17 @@ import ghidra.util.task.TaskMonitor;
  *  - X and Y are tags
  *  - ** indicates a conflict
  *  
- * 		User A	|	Add X	Add Y	Delete X	Delete Y	
- * 				|
+ * 	User A	|Add X	Add Y	Delete X	Delete Y	
+ * 		|
  * User B		|
  * -------------------------------------------------------
- * Add X		|	X		X,Y			**			X		
- * 				|
- * Add Y		|	X,Y		Y			Y			**		
- * 				|
- * Delete X		|	**		Y			-			-				
- * 				|
- * Delete Y		|	X		**			-			-		
+ * Add X		|X		X,Y		**		X		
+ * 		|
+ * Add Y		|X,Y	Y		Y		**		
+ * 		|
+ * Delete X		|**		Y		-		-			
+ * 		|
+ * Delete Y		|X		**		-		-		
  * 
  * 
  */
@@ -95,7 +95,7 @@ public class FunctionTagListingMerger extends AbstractListingMerger {
 		super(listingMergeMgr);
 	}
 
-	/******************************************************************************
+	/****************************************************************************
 	 * PUBLIC METHODS
 	 ******************************************************************************/
 
@@ -204,9 +204,9 @@ public class FunctionTagListingMerger extends AbstractListingMerger {
 					// Make sure we're supposed to prompt the user; if not, just use the 
 					// previous choice and merge.
 					if (tagChoice != ASK_USER) {
-						int optionToUse =
-							(tagChoice == ASK_USER) ? chosenConflictOption : tagChoice;
-						mergeConflictingTag(addr, optionToUse, monitor);
+						// tagChoice may have been changed by the user's "Use For All" selection
+						// in a previous iteration; use it directly.
+						mergeConflictingTag(addr, tagChoice, monitor);
 					}
 					else {
 						showMergePanel(listingPanel, addr, id, monitor);
@@ -228,7 +228,7 @@ public class FunctionTagListingMerger extends AbstractListingMerger {
 		}
 	}
 
-	/******************************************************************************
+	/****************************************************************************
 	 * PRIVATE METHODS
 	 ******************************************************************************/
 
@@ -249,9 +249,9 @@ public class FunctionTagListingMerger extends AbstractListingMerger {
 		// additions/removals of tags from the address; tag creations/deletions/edits will not be 
 		// in these change sets.
 		AddressSetView myChangedAddresses =
-			listingMergeMgr.diffOriginalMy.getDifferences(new ProgramDiffFilter(diffType), monitor);
+				listingMergeMgr.diffOriginalMy.getDifferences(new ProgramDiffFilter(diffType), monitor);
 		AddressSetView latestChangedAddresses = listingMergeMgr.diffOriginalLatest
-				.getDifferences(new ProgramDiffFilter(diffType), monitor);
+					.getDifferences(new ProgramDiffFilter(diffType), monitor);
 
 		// Get a list of all deleted tags in My and Latest.
 		Collection<? extends FunctionTag> myDeletedTags = getDeletedTags(myPgm, monitor);
@@ -312,7 +312,7 @@ public class FunctionTagListingMerger extends AbstractListingMerger {
 	 * Adds the given tag/address combo to the global conflict list.
 	 * 
 	 * @param addr the conflicting address
-	 * @param tag the conflicting tag
+	 	* @param tag the conflicting tag
 	 */
 	private void addToConflicts(Address addr, FunctionTag tag) {
 		if (conflictMap.get(addr) == null) {
@@ -484,7 +484,7 @@ public class FunctionTagListingMerger extends AbstractListingMerger {
 		// want to throw away; the keep list is the one we want to keep.
 		//
 		// ie: 	Original 	= "Red"
-		//		My 			= "Red-my"
+		//		My 		= "Red-my"
 		//		Latest 		= "Red-latest"
 		//
 		// If the decision is KEEP_LATEST, then "Red-my" and "Red" will be added
