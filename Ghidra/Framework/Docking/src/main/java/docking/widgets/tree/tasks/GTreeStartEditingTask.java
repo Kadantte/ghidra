@@ -104,6 +104,10 @@ public class GTreeStartEditingTask extends GTreeTask {
 
 		@Override
 		public void treeNodesInserted(TreeModelEvent e) {
+			if (newName == null) {
+				return; // editing cancelled
+			}
+
 			Object[] children = e.getChildren();
 			for (Object object : children) {
 				GTreeNode node = (GTreeNode) object;

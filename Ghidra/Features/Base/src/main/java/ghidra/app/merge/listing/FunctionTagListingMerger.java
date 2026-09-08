@@ -42,7 +42,7 @@ import ghidra.util.task.TaskMonitor;
  * Most merging can be done automatically; the exception being when a
  * tag has been added to a function by one user, but deleted from the
  * program by another.
- * <p
+ * <p>
  * Note that there are other tag related conflict cases, but they are 
  * handled by the {@link FunctionTagMerger}, which handles all aspects of
  * creation/deletion/editing of tags independent of functions. 
