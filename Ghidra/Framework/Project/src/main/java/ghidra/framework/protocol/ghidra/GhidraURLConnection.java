@@ -55,7 +55,7 @@ public class GhidraURLConnection extends URLConnection {
 		 * This status code includes a variety of connection errors
 		 * which are reported/logged by the Ghidra Server support code.
 		 * This error may also occur when the connection is not allowed
-		 * by the user (see {@link GhidraURLAllowListProvider}).
+		 * by the user (see {@link DefaultGhidraUrlAllowListProvider}).
 		 */
 		UNAVAILABLE(503, "Unavailable");
 
