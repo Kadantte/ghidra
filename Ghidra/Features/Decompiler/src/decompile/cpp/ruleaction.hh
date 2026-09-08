@@ -1266,7 +1266,7 @@ public:
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
-  static PcodeOp *findSubshift(PcodeOp *op,int4 &n,OpCode &shiftopc);
+  static PcodeOp *findSubshift(PcodeOp *op,uint4 &n,OpCode &shiftopc);
 };
 
 class RuleDivTermAdd2 : public Rule {
@@ -1281,7 +1281,7 @@ public:
 };
 
 class RuleDivOpt : public Rule {
-  static uintb calcDivisor(uintb n,uint8 *y,int4 xsize);		///< Calculate the divisor
+  static uintb calcDivisor(uint4 n,uint8 *y,uint4 xsize);		///< Calculate the divisor
   static void moveSignBitExtraction(Varnode *firstVn,Varnode *replaceVn,Funcdata &data);
   static bool checkFormOverlap(PcodeOp *op);	///< If form rooted at given PcodeOp is superseded by an overlapping form
 public:
@@ -1292,7 +1292,7 @@ public:
   }
   virtual void getOpList(vector<uint4> &oplist) const;
   virtual int4 applyOp(PcodeOp *op,Funcdata &data);
-  static Varnode *findForm(PcodeOp *op,int4 &n,uint8 *y,int4 &xsize,OpCode &extopc);
+  static Varnode *findForm(PcodeOp *op,uint4 &n,uint8 *y,uint4 &xsize,OpCode &extopc);
 };
 
 class RuleSignDiv2 : public Rule {
